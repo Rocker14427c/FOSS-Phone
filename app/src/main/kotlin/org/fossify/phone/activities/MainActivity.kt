@@ -203,6 +203,7 @@ class MainActivity : SimpleActivity() {
             findItem(R.id.change_view_type).isVisible = currentFragment == getFavoritesFragment()
             findItem(R.id.column_count).isVisible = currentFragment == getFavoritesFragment() && config.viewType == VIEW_TYPE_GRID
             findItem(R.id.more_apps_from_us).isVisible = !resources.getBoolean(R.bool.hide_google_relations)
+            findItem(R.id.call_recordings).isVisible = resources.getBoolean(R.bool.show_call_recording)
         }
     }
 
@@ -229,6 +230,7 @@ class MainActivity : SimpleActivity() {
                     R.id.sort -> showSortingDialog(showCustomSorting = getCurrentFragment() is FavoritesFragment)
                     R.id.filter -> showFilterDialog()
                     R.id.more_apps_from_us -> launchMoreAppsFromUsIntent()
+                    R.id.call_recordings -> startActivity(Intent(this, RecordingsActivity::class.java))
                     R.id.settings -> launchSettings()
                     R.id.change_view_type -> changeViewType()
                     R.id.column_count -> changeColumnCount()
