@@ -3,10 +3,14 @@ package org.fossify.phone.receivers
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import org.fossify.commons.extensions.toast
+import org.fossify.phone.R
 import org.fossify.phone.activities.CallActivity
 import org.fossify.phone.helpers.ACCEPT_CALL
 import org.fossify.phone.helpers.CallManager
+import org.fossify.phone.helpers.CallRecordingManager
 import org.fossify.phone.helpers.DECLINE_CALL
+import org.fossify.phone.helpers.STOP_RECORDING
 
 class CallActionReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
@@ -17,6 +21,13 @@ class CallActionReceiver : BroadcastReceiver() {
             }
 
             DECLINE_CALL -> CallManager.reject()
+
+            STOP_RECORDING -> {
+                val saved = CallRecordingManager.stop(context, stoppedByUser = true)
+                context.toast(
+                    if (saved) R.string.call_recording_stopped else R.string.call_recording_discarded
+                )
+            }
         }
     }
 }

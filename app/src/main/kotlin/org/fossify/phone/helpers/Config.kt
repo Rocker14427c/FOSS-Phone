@@ -139,4 +139,9 @@ class Config(context: Context) : BaseConfig(context) {
     var autoRecordCalls: Boolean
         get() = prefs.getBoolean(AUTO_RECORD_CALLS, false)
         set(autoRecordCalls) = prefs.edit().putBoolean(AUTO_RECORD_CALLS, autoRecordCalls).apply()
+
+    var playBeepWhenRecording: Boolean
+        get() = prefs.getBoolean(PLAY_BEEP_WHEN_RECORDING, false)
+        set(playBeepWhenRecording) =
+            prefs.edit().putBoolean(PLAY_BEEP_WHEN_RECORDING, playBeepWhenRecording).apply()
 }

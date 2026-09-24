@@ -41,6 +41,10 @@ import org.fossify.phone.extensions.*
 import org.fossify.phone.helpers.*
 import org.fossify.phone.models.AudioRoute
 import org.fossify.phone.models.CallContact
+import org.fossify.phone.models.Events
+import org.greenrobot.eventbus.EventBus
+import org.greenrobot.eventbus.Subscribe
+import org.greenrobot.eventbus.ThreadMode
 import kotlin.math.max
 import kotlin.math.min
 
@@ -110,6 +114,21 @@ class CallActivity : SimpleActivity() {
         updateState()
     }
 
+    override fun onStart() {
+        super.onStart()
+        EventBus.getDefault().register(this)
+    }
+
+    override fun onStop() {
+        super.onStop()
+        EventBus.getDefault().unregister(this)
+    }
+
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    fun onRecordingStateChanged(event: Events.RecordingStateChanged) {
+        updateCallRecordingButton()
+    }
+
     override fun onDestroy() {
         super.onDestroy()
         CallManager.removeListener(callCallback)
@@ -175,10 +194,11 @@ class CallActivity : SimpleActivity() {
             toggleHold()
         }
 
+        callRecord.beVisibleIf(CallRecordingManager.isFeatureEnabled(this@CallActivity))
         callRecord.setOnClickListener {
             if (CallRecordingManager.isRecording()) {
-                val saved = CallRecordingManager.stop(this)
-                toast(if (saved) R.string.call_recording_stopped else R.string.call_recording_failed)
+                val saved = CallRecordingManager.stop(this@CallActivity, stoppedByUser = true)
+                toast(if (saved) R.string.call_recording_stopped else R.string.call_recording_discarded)
                 updateCallRecordingButton()
             } else if (ContextCompat.checkSelfPermission(this@CallActivity, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
                 startCallRecording()
@@ -718,11 +738,10 @@ class CallActivity : SimpleActivity() {
 
         updateCallAudioState(CallManager.getCallAudioRoute())
         updateCallRecordingButton()
-        callDurationHandler.postDelayed({ updateCallRecordingButton() }, 350L)
     }
 
     private fun startCallRecording() {
-        if (CallRecordingManager.start(this)) {
+        if (CallRecordingManager.start(this, label = recordingLabel())) {
             val message = if (CallRecordingManager.isCapturingCallAudio()) {
                 R.string.call_recording_started_call_audio
             } else {
@@ -735,14 +754,24 @@ class CallActivity : SimpleActivity() {
         updateCallRecordingButton()
     }
 
+    private fun recordingLabel(): String {
+        return callContact?.number?.takeIf { it.isNotEmpty() }
+            ?: CallManager.getPrimaryCall()?.details?.handle?.schemeSpecificPart.orEmpty()
+    }
+
     private fun updateCallRecordingButton() {
+        if (!CallRecordingManager.isFeatureEnabled(this)) {
+            binding.callRecord.beGone()
+            return
+        }
+
         val recording = CallRecordingManager.isRecording()
         binding.callRecord.apply {
             setImageResource(if (recording) R.drawable.ic_stop_recording_vector else R.drawable.ic_record_call_vector)
             contentDescription = getString(if (recording) R.string.stop_call_recording else R.string.start_call_recording)
             toggleButtonColor(this, recording)
             val callActive = CallManager.getState() == Call.STATE_ACTIVE
-            setActionButtonEnabled(this, enabled = callActive && !isCallEnded)
+            setActionButtonEnabled(this, enabled = (recording || callActive) && !isCallEnded)
         }
     }
 

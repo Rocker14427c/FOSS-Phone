@@ -116,6 +116,8 @@ class SettingsActivity : SimpleActivity() {
         setupDialPadOpen()
         setupGroupSubsequentCalls()
         setupAutoRecordCalls()
+        setupPlayBeepWhenRecording()
+        setupManageRecordings()
         setupStartNameWithSurname()
         setupFormatPhoneNumbers()
         setupDialpadVibrations()
@@ -315,6 +317,7 @@ class SettingsActivity : SimpleActivity() {
 
     private fun setupAutoRecordCalls() {
         binding.apply {
+            settingsAutoRecordCallsHolder.beVisibleIf(resources.getBoolean(R.bool.show_call_recording))
             val canRecord = ContextCompat.checkSelfPermission(this@SettingsActivity, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED
             if (config.autoRecordCalls && !canRecord) config.autoRecordCalls = false
             settingsAutoRecordCalls.isChecked = config.autoRecordCalls
@@ -330,6 +333,26 @@ class SettingsActivity : SimpleActivity() {
                     settingsAutoRecordCalls.isChecked = true
                     requestRecordingPermission.launch(Manifest.permission.RECORD_AUDIO)
                 }
+            }
+        }
+    }
+
+    private fun setupPlayBeepWhenRecording() {
+        binding.apply {
+            settingsPlayBeepWhenRecordingHolder.beVisibleIf(resources.getBoolean(R.bool.show_call_recording))
+            settingsPlayBeepWhenRecording.isChecked = config.playBeepWhenRecording
+            settingsPlayBeepWhenRecordingHolder.setOnClickListener {
+                settingsPlayBeepWhenRecording.toggle()
+                config.playBeepWhenRecording = settingsPlayBeepWhenRecording.isChecked
+            }
+        }
+    }
+
+    private fun setupManageRecordings() {
+        binding.settingsManageRecordingsHolder.beVisibleIf(resources.getBoolean(R.bool.show_call_recording))
+        binding.settingsManageRecordingsHolder.setOnClickListener {
+            Intent(this, RecordingsActivity::class.java).apply {
+                startActivity(this)
             }
         }
     }

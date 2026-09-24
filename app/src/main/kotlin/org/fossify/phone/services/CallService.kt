@@ -12,11 +12,13 @@ import org.fossify.phone.extensions.isOutgoing
 import org.fossify.phone.extensions.keyguardManager
 import org.fossify.phone.extensions.powerManager
 import org.fossify.phone.helpers.CallManager
-import org.fossify.phone.helpers.CallRecordingManager
 import org.fossify.phone.helpers.CallNotificationManager
+import org.fossify.phone.helpers.CallRecordingManager
 import org.fossify.phone.helpers.NoCall
 import org.fossify.phone.models.Events
 import org.greenrobot.eventbus.EventBus
+import org.greenrobot.eventbus.Subscribe
+import org.greenrobot.eventbus.ThreadMode
 
 class CallService : InCallService() {
     private val callNotificationManager by lazy { CallNotificationManager(this) }
@@ -24,13 +26,18 @@ class CallService : InCallService() {
     private val callListener = object : Call.Callback() {
         override fun onStateChanged(call: Call, state: Int) {
             super.onStateChanged(call, state)
-            if (state == Call.STATE_DISCONNECTED || state == Call.STATE_DISCONNECTING) {
+            if (CallManager.getPhoneState() == NoCall) {
                 callNotificationManager.cancelNotification()
             } else {
                 callNotificationManager.setupNotification()
             }
             updateCallRecording(call, state)
         }
+    }
+
+    override fun onCreate() {
+        super.onCreate()
+        EventBus.getDefault().register(this)
     }
 
     override fun onCallAdded(call: Call) {
@@ -71,17 +78,15 @@ class CallService : InCallService() {
     override fun onCallRemoved(call: Call) {
         super.onCallRemoved(call)
         call.unregisterCallback(callListener)
-        CallRecordingManager.stop(this)
         val wasPrimaryCall = call == CallManager.getPrimaryCall()
         CallManager.onCallRemoved(call)
         if (CallManager.getPhoneState() == NoCall) {
+            // the whole call session is over, save any recording and reset the session state
+            CallRecordingManager.endSession(this)
             CallManager.inCallService = null
             callNotificationManager.cancelNotification()
         } else {
             callNotificationManager.setupNotification()
-            CallManager.getPrimaryCall()?.let { primaryCall ->
-                updateCallRecording(primaryCall, primaryCall.state)
-            }
             if (wasPrimaryCall) {
                 startActivity(CallActivity.getStartIntent(this))
             }
@@ -90,11 +95,18 @@ class CallService : InCallService() {
         EventBus.getDefault().post(Events.RefreshCallLog)
     }
 
+    /**
+     * A single recording covers the whole call session: it keeps running across hold, swap and
+     * multiple calls and is stopped only when every call has ended. If the user manually stopped
+     * recording, automatic restarts stay off for the rest of the session.
+     */
     private fun updateCallRecording(call: Call, state: Int) {
-        if (state == Call.STATE_ACTIVE) {
-            if (config.autoRecordCalls) CallRecordingManager.start(this)
-        } else if (state == Call.STATE_HOLDING || state == Call.STATE_DISCONNECTING || state == Call.STATE_DISCONNECTED) {
-            CallRecordingManager.stop(this)
+        if (state == Call.STATE_ACTIVE && config.autoRecordCalls) {
+            CallRecordingManager.start(
+                context = this,
+                automatic = true,
+                label = call.details?.handle?.schemeSpecificPart
+            )
         }
     }
 
@@ -105,8 +117,16 @@ class CallService : InCallService() {
         }
     }
 
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    fun onRecordingStateChanged(event: Events.RecordingStateChanged) {
+        if (CallManager.getPhoneState() != NoCall) {
+            callNotificationManager.setupNotification()
+        }
+    }
+
     override fun onDestroy() {
-        CallRecordingManager.stop(this)
+        CallRecordingManager.endSession(this)
+        EventBus.getDefault().unregister(this)
         super.onDestroy()
         callNotificationManager.cancelNotification()
     }

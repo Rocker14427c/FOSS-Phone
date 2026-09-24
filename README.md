@@ -24,19 +24,29 @@ Download the Fossify Phone App now and step into a mobile world where privacy se
 
 ## Call recording
 
-Call recording is off by default. Enable **Automatically record calls** in Settings to start only during active calls, or use the recording control on the in-call screen. The app requests microphone permission and stores recordings locally (in `Music/Fossify Phone` on Android 10+, or the app-specific Music directory on older Android versions).
+Call recording is off by default. Enable **Automatically record calls** in Settings to record every call from the moment it becomes active — one recording covers the whole call session, including hold and swap, and ends when all calls end — or use the recording control on the in-call screen (also available as a "Stop recording" action on the ongoing-call notification). Recordings are stored in the app's own private storage and can be played back, shared and deleted from the **Manage call recordings** screen in Settings.
 
-For two-way cellular call audio, Android requires the privileged `android.permission.CAPTURE_AUDIO_OUTPUT` permission and `MediaRecorder.AudioSource.VOICE_CALL`. The manifest requests this permission, but ordinary installs cannot receive it. A rooted/system integration must install this package as a privileged app and allowlist the permission on the same system partition. A typical allowlist entry is:
+For two-way cellular call audio, Android requires the privileged `android.permission.CAPTURE_AUDIO_OUTPUT` permission and `MediaRecorder.AudioSource.VOICE_CALL`. The manifest requests this permission, but ordinary installs cannot receive it. A rooted/system integration must install this package as a privileged app (matching the installed package id, e.g. `org.fossify.phone` or `org.fossify.phone.debug`) and allowlist its privileged permissions on the same system partition, for example:
 
 ```xml
+<!-- /etc/permissions/privapp-permissions-org.fossify.phone.xml -->
 <permissions>
     <privapp-permissions package="org.fossify.phone">
         <permission name="android.permission.CAPTURE_AUDIO_OUTPUT" />
+        <permission name="android.permission.CALL_PRIVILEGED" />
     </privapp-permissions>
 </permissions>
+
+<!-- /etc/default-permissions/permissions-org.fossify.phone.xml (optional: pre-grant the microphone
+     so auto recording works on a fresh boot without user interaction) -->
+<exceptions>
+    <exception package="org.fossify.phone">
+        <permission name="android.permission.RECORD_AUDIO" fixed="false" />
+    </exception>
+</exceptions>
 ```
 
-Without that grant the recorder falls back to the microphone, which is not guaranteed to capture the other caller; hardware and Android builds can also vary. The app uses the true call-audio source when permitted, and falls back if the device rejects it. Follow local consent laws before recording.
+Without the `CAPTURE_AUDIO_OUTPUT` grant the recorder falls back to the microphone, which is not guaranteed to capture the other caller; hardware and Android builds can also vary. The app uses the true call-audio source when permitted, and falls back if the device rejects it. Follow local consent laws before recording; the optional "Play a beep when recording starts" setting helps notify the other party where required. The Google Play flavor does not include call recording at all, in line with Play policy.
 
 ➡️ Explore more Fossify apps: https://www.fossify.org<br>
 ➡️ Open-Source Code: https://www.github.com/FossifyOrg<br>
