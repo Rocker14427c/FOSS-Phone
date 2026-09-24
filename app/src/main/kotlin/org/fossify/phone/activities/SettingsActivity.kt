@@ -1,10 +1,13 @@
 package org.fossify.phone.activities
 
+import android.Manifest
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Bundle
 import android.view.Menu
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.ContextCompat
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
 import org.fossify.commons.activities.ManageBlockedNumbersActivity
@@ -61,6 +64,12 @@ class SettingsActivity : SimpleActivity() {
     }
 
     private val binding by viewBinding(ActivitySettingsBinding::inflate)
+    private val requestRecordingPermission =
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+            binding.settingsAutoRecordCalls.isChecked = granted
+            config.autoRecordCalls = granted
+            if (!granted) toast(R.string.recording_permission_required)
+        }
     private val getContent =
         registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
             if (uri != null) {
@@ -106,6 +115,7 @@ class SettingsActivity : SimpleActivity() {
         setupOnContactClick()
         setupDialPadOpen()
         setupGroupSubsequentCalls()
+        setupAutoRecordCalls()
         setupStartNameWithSurname()
         setupFormatPhoneNumbers()
         setupDialpadVibrations()
@@ -299,6 +309,27 @@ class SettingsActivity : SimpleActivity() {
             settingsGroupSubsequentCallsHolder.setOnClickListener {
                 settingsGroupSubsequentCalls.toggle()
                 config.groupSubsequentCalls = settingsGroupSubsequentCalls.isChecked
+            }
+        }
+    }
+
+    private fun setupAutoRecordCalls() {
+        binding.apply {
+            val canRecord = ContextCompat.checkSelfPermission(this@SettingsActivity, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED
+            if (config.autoRecordCalls && !canRecord) config.autoRecordCalls = false
+            settingsAutoRecordCalls.isChecked = config.autoRecordCalls
+            settingsAutoRecordCallsHolder.setOnClickListener {
+                val enable = !settingsAutoRecordCalls.isChecked
+                if (!enable) {
+                    settingsAutoRecordCalls.isChecked = false
+                    config.autoRecordCalls = false
+                } else if (ContextCompat.checkSelfPermission(this@SettingsActivity, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
+                    settingsAutoRecordCalls.isChecked = true
+                    config.autoRecordCalls = true
+                } else {
+                    settingsAutoRecordCalls.isChecked = true
+                    requestRecordingPermission.launch(Manifest.permission.RECORD_AUDIO)
+                }
             }
         }
     }

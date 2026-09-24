@@ -12,6 +12,7 @@ import org.fossify.phone.extensions.isOutgoing
 import org.fossify.phone.extensions.keyguardManager
 import org.fossify.phone.extensions.powerManager
 import org.fossify.phone.helpers.CallManager
+import org.fossify.phone.helpers.CallRecordingManager
 import org.fossify.phone.helpers.CallNotificationManager
 import org.fossify.phone.helpers.NoCall
 import org.fossify.phone.models.Events
@@ -28,6 +29,7 @@ class CallService : InCallService() {
             } else {
                 callNotificationManager.setupNotification()
             }
+            updateCallRecording(call, state)
         }
     }
 
@@ -36,6 +38,7 @@ class CallService : InCallService() {
         CallManager.onCallAdded(call)
         CallManager.inCallService = this
         call.registerCallback(callListener)
+        updateCallRecording(call, call.state)
 
         // Incoming/Outgoing (locked): high priority (FSI)
         // Incoming (unlocked): if user opted in, low priority ➜ manual activity start, otherwise high priority (FSI)
@@ -68,6 +71,7 @@ class CallService : InCallService() {
     override fun onCallRemoved(call: Call) {
         super.onCallRemoved(call)
         call.unregisterCallback(callListener)
+        CallRecordingManager.stop(this)
         val wasPrimaryCall = call == CallManager.getPrimaryCall()
         CallManager.onCallRemoved(call)
         if (CallManager.getPhoneState() == NoCall) {
@@ -75,12 +79,23 @@ class CallService : InCallService() {
             callNotificationManager.cancelNotification()
         } else {
             callNotificationManager.setupNotification()
+            CallManager.getPrimaryCall()?.let { primaryCall ->
+                updateCallRecording(primaryCall, primaryCall.state)
+            }
             if (wasPrimaryCall) {
                 startActivity(CallActivity.getStartIntent(this))
             }
         }
 
         EventBus.getDefault().post(Events.RefreshCallLog)
+    }
+
+    private fun updateCallRecording(call: Call, state: Int) {
+        if (state == Call.STATE_ACTIVE) {
+            if (config.autoRecordCalls) CallRecordingManager.start(this)
+        } else if (state == Call.STATE_HOLDING || state == Call.STATE_DISCONNECTING || state == Call.STATE_DISCONNECTED) {
+            CallRecordingManager.stop(this)
+        }
     }
 
     override fun onCallAudioStateChanged(audioState: CallAudioState?) {
@@ -91,6 +106,7 @@ class CallService : InCallService() {
     }
 
     override fun onDestroy() {
+        CallRecordingManager.stop(this)
         super.onDestroy()
         callNotificationManager.cancelNotification()
     }

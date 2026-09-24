@@ -75,6 +75,15 @@
 
     <!-- Settings -->
     <string name="group_subsequent_calls">Group subsequent calls with the same number at the call log</string>
+    <string name="auto_record_calls">Automatically record calls</string>
+    <string name="auto_record_calls_limitation">Starts only while a call is active. With CAPTURE_AUDIO_OUTPUT granted to a privileged/system install, Android can provide both call directions. Otherwise this falls back to microphone-only audio, and the other caller may not be audible. Recordings stay on this device. Follow local consent laws.</string>
+    <string name="start_call_recording">Start call recording</string>
+    <string name="stop_call_recording">Stop call recording</string>
+    <string name="call_recording_started">Microphone-only recording started. The other caller may not be audible on this install.</string>
+    <string name="call_recording_started_call_audio">Two-way call audio recording started.</string>
+    <string name="call_recording_stopped">Recording saved on this device</string>
+    <string name="call_recording_failed">Could not start recording. Check microphone permission and available storage.</string>
+    <string name="recording_permission_required">Allow microphone access to record calls</string>
     <string name="open_dialpad_by_default">Open the dialpad by default when the app opens</string>
     <string name="disable_proximity_sensor">Disable proximity sensor during calls</string>
     <string name="disable_swipe_to_answer">Replace swiping at responding to incoming calls with clicking</string>

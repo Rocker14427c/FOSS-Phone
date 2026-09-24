@@ -22,6 +22,22 @@ The Fossify Phone App is designed for optimal resource usage, contributing to ex
 
 Download the Fossify Phone App now and step into a mobile world where privacy seamlessly blends with functionality. Your journey towards a safer, personalized mobile experience starts here.
 
+## Call recording
+
+Call recording is off by default. Enable **Automatically record calls** in Settings to start only during active calls, or use the recording control on the in-call screen. The app requests microphone permission and stores recordings locally (in `Music/Fossify Phone` on Android 10+, or the app-specific Music directory on older Android versions).
+
+For two-way cellular call audio, Android requires the privileged `android.permission.CAPTURE_AUDIO_OUTPUT` permission and `MediaRecorder.AudioSource.VOICE_CALL`. The manifest requests this permission, but ordinary installs cannot receive it. A rooted/system integration must install this package as a privileged app and allowlist the permission on the same system partition. A typical allowlist entry is:
+
+```xml
+<permissions>
+    <privapp-permissions package="org.fossify.phone">
+        <permission name="android.permission.CAPTURE_AUDIO_OUTPUT" />
+    </privapp-permissions>
+</permissions>
+```
+
+Without that grant the recorder falls back to the microphone, which is not guaranteed to capture the other caller; hardware and Android builds can also vary. The app uses the true call-audio source when permitted, and falls back if the device rejects it. Follow local consent laws before recording.
+
 ➡️ Explore more Fossify apps: https://www.fossify.org<br>
 ➡️ Open-Source Code: https://www.github.com/FossifyOrg<br>
 ➡️ Join the community on Reddit: https://www.reddit.com/r/Fossify<br>
