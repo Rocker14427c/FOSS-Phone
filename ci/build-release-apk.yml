@@ -1,0 +1,97 @@
+# Builds and publishes the signed foss release APK to the GitHub Releases section.
+#
+# Optional repository secrets for stable signing keys across releases (recommended):
+#   KEYSTORE_P12_B64       base64-encoded PKCS12 keystore
+#   SIGNING_KEY_ALIAS      key alias inside the keystore
+#   SIGNING_KEY_PASSWORD   key password
+#   SIGNING_STORE_PASSWORD keystore password
+# Without them the build falls back to an ephemeral per-run key (installable,
+# but Android updates require a matching signature, so configure the secrets!).
+name: Build release APK
+
+on:
+  push:
+    branches:
+      - "arena/**"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android SDK packages
+        run: |
+          yes | sdkmanager --licenses > /dev/null 2>&1 || true
+          sdkmanager "platforms;android-36" "platform-tools" > /dev/null
+
+      - name: Prepare signing keystore
+        env:
+          KEYSTORE_P12_B64: ${{ secrets.KEYSTORE_P12_B64 }}
+          SECRET_KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS }}
+          SECRET_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
+          SECRET_STORE_PASSWORD: ${{ secrets.SIGNING_STORE_PASSWORD }}
+        run: |
+          set -e
+          if [ -n "$KEYSTORE_P12_B64" ]; then
+            echo "$KEYSTORE_P12_B64" | base64 -d > "$RUNNER_TEMP/release.p12"
+            echo "SIGNING_KEY_ALIAS=$SECRET_KEY_ALIAS" >> "$GITHUB_ENV"
+            echo "SIGNING_KEY_PASSWORD=$SECRET_KEY_PASSWORD" >> "$GITHUB_ENV"
+            echo "SIGNING_STORE_PASSWORD=$SECRET_STORE_PASSWORD" >> "$GITHUB_ENV"
+            echo "Using the configured release keystore." >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "::warning::KEYSTORE_P12_B64 secret not configured - using an ephemeral per-run signing key. Configure repository secrets (KEYSTORE_P12_B64, SIGNING_KEY_ALIAS, SIGNING_KEY_PASSWORD, SIGNING_STORE_PASSWORD) for stable update signatures."
+            keytool -genkeypair -keystore "$RUNNER_TEMP/release.p12" -storetype pkcs12 \
+              -alias release -keyalg RSA -keysize 2048 -validity 10000 \
+              -storepass ephemeralpass -keypass ephemeralpass \
+              -dname "CN=Fossify Phone Release Build"
+            echo "SIGNING_KEY_ALIAS=release" >> "$GITHUB_ENV"
+            echo "SIGNING_KEY_PASSWORD=ephemeralpass" >> "$GITHUB_ENV"
+            echo "SIGNING_STORE_PASSWORD=ephemeralpass" >> "$GITHUB_ENV"
+            echo "**Signed with an ephemeral per-run key** (sideload/testing build)." >> "$GITHUB_STEP_SUMMARY"
+          fi
+          echo "SIGNING_STORE_FILE=$RUNNER_TEMP/release.p12" >> "$GITHUB_ENV"
+
+      - name: Build foss release APK
+        run: ./gradlew :app:assembleFossRelease --no-daemon --stacktrace
+
+      - name: Prepare release assets
+        run: |
+          set -e
+          version=$(grep '^VERSION_NAME=' gradle.properties | cut -d= -f2)
+          out="app/build/outputs/apk/foss/release"
+          ls -la "$out"
+          apk=$(ls "$out"/*.apk | head -n 1)
+          asset="Fossify-Phone-${version}.apk"
+          cp "$apk" "$asset"
+          sha256sum "$asset" | tee "$asset.sha256"
+          echo "RELEASE_TAG=v${version}" >> "$GITHUB_ENV"
+          echo "RELEASE_ASSET=$asset" >> "$GITHUB_ENV"
+
+      - name: Publish to GitHub Releases
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -e
+          if ! gh release view "$RELEASE_TAG" > /dev/null 2>&1; then
+            gh release create "$RELEASE_TAG" \
+              --target "$GITHUB_SHA" \
+              --title "Fossify Phone ${RELEASE_TAG#v}" \
+              --notes "See the repository release notes."
+          fi
+          gh release upload "$RELEASE_TAG" "$RELEASE_ASSET" "$RELEASE_ASSET.sha256" --clobber
+          gh release view "$RELEASE_TAG"

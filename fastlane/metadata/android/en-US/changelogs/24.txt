@@ -1,0 +1,7 @@
+- Added call recording: manual control on the in-call screen plus optional automatic recording
+- Two-way call audio on privileged/system installs (CAPTURE_AUDIO_OUTPUT + VOICE_CALL), microphone fallback elsewhere
+- New Manage call recordings screen: playback with seek, share, delete
+- Recordings are stored privately in app storage and are crash-safe
+- Recording keeps running across hold, swap and multiple calls
+- Optional consent beep and a recording indicator/action on the call notification
+- Call recording is excluded from the Google Play flavor per Play policy
