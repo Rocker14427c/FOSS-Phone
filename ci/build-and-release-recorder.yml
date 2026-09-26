@@ -1,0 +1,99 @@
+name: Build and release integrated recorder
+
+on:
+  workflow_dispatch:
+  push:
+    branches: ["arena/01a0dcd1-foss-phone"]
+  pull_request:
+    paths:
+      - "app/**"
+      - "gradle/**"
+      - "*.gradle.kts"
+      - "gradle.properties"
+      - "tools/**"
+      - ".github/workflows/build-and-release-recorder.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: recording-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  recording:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: 'platform-tools'
+          log-accepted-android-sdk-licenses: false
+      - name: Install SDK packages
+        run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
+      - name: Test module packaging
+        run: python3 -m unittest discover -s tools -p 'test_*.py' -v
+      - name: Test PCM capture and build recording and Play variants
+        run: ./gradlew :app:testFossDebugUnitTest :app:assembleFossDebug :app:assembleGplayDebug --no-daemon --stacktrace
+      - name: Package and verify APK and privileged module
+        run: |
+          set -euo pipefail
+          out=build/recording-artifacts
+          mkdir -p "$out"
+          apk=$(find app/build/outputs/apk/foss/debug -maxdepth 1 -name '*.apk' -print -quit)
+          test -n "$apk"
+          cp "$apk" "$out/FOSS-Phone-test.apk"
+          python3 tools/build_call_recording_module.py "$apk" "$out/FOSS-Phone-Magisk.zip" \
+            --aapt2 "$ANDROID_HOME/build-tools/36.0.0/aapt2"
+          "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --print-certs "$apk" > "$out/APK-CERTIFICATE.txt"
+          python3 - <<'PY'
+          from pathlib import Path
+          from zipfile import ZipFile
+          root = Path('build/recording-artifacts')
+          with ZipFile(root / 'FOSS-Phone-Magisk.zip') as module:
+              assert module.read('system/priv-app/FossifyPhone/FossifyPhone.apk') == (root / 'FOSS-Phone-test.apk').read_bytes()
+          PY
+          printf 'Source commit: %s\nPackage: org.fossify.phone.debug\nSigning: CI debug key (not a stable update key)\n' "$GITHUB_SHA" > "$out/BUILD-INFO.txt"
+          cp docs/call-recording.md "$out/INSTALL.md"
+          (cd "$out" && sha256sum *.apk *.zip > SHA256SUMS.txt)
+      - name: Upload installable test artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: integrated-call-recording
+          path: build/recording-artifacts/
+      - name: Publish tested build as prerelease (not ROM-verified)
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/arena/01a0dcd1-foss-phone'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          version=$(sed -n 's/^VERSION_NAME=//p' gradle.properties)
+          tag="v${version}"
+          if gh release view "$tag" >/dev/null 2>&1; then
+            echo "Release $tag already exists; refusing to replace published binaries. Bump VERSION_NAME for a new release."
+            exit 1
+          fi
+          gh release create "$tag" build/recording-artifacts/* \
+            --target "$GITHUB_SHA" --draft --prerelease --latest=false \
+            --title "FOSS Phone $version — integrated recorder (test build)" \
+            --notes-file docs/recording-release-notes.md
+          gh release edit "$tag" --draft=false --prerelease --latest=false
+      - name: Upload unit test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: recording-unit-test-results
+          path: app/build/reports/tests/
+          if-no-files-found: ignore

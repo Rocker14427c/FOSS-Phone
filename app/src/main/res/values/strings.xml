@@ -75,6 +75,44 @@
 
     <!-- Settings -->
     <string name="group_subsequent_calls">Group subsequent calls with the same number at the call log</string>
+    <string name="auto_record_calls">Automatically record calls</string>
+    <string name="auto_record_calls_limitation">Needs the Phone recording module and a supported ROM. No other recorder app is needed. Held audio is skipped. Tell the other person before recording.</string>
+    <string name="start_call_recording">Start call recording</string>
+    <string name="stop_call_recording">Stop call recording</string>
+    <string name="call_recording_started_call_audio">Call-audio capture started. Verify both voices on your device and ROM.</string>
+    <string name="call_recording_starting">Starting call recording…</string>
+    <string name="call_recording_saving">Saving recording…</string>
+    <string name="call_recording_stopped">Recording saved</string>
+    <string name="call_recording_failed">Could not capture call audio. Try another recording quality, check microphone access, and confirm your ROM supports call recording.</string>
+    <string name="call_recording_privileged_required">Install the Phone recording module and restart your phone. Root or microphone access alone is not enough.</string>
+    <string name="call_recording_no_audio">The call stream contained no sound. No recording was saved. Check ROM and audio-route support.</string>
+    <string name="call_recording_blocked">Android blocked the call-audio stream. No recording was saved.</string>
+    <string name="call_recording_partial">Recording was interrupted. Only the audio captured before the error was saved.</string>
+    <string name="call_recording_service_failed">Android could not start the recording service. Open Phone, check microphone permission, and try again.</string>
+    <string name="call_recording_storage_failed">Could not save the recording. Check available storage.</string>
+    <string name="call_recording_in_progress">Recording</string>
+    <string name="recording_permission_required">Allow microphone access to record calls</string>
+    <string name="call_recordings">Call recordings</string>
+    <string name="manage_call_recordings">Manage call recordings</string>
+    <string name="no_recordings_found">No call recordings yet</string>
+    <string name="recording_info" translatable="false">%1$s · %2$s · %3$s</string>
+    <string name="recording_progress" translatable="false">%1$s / %2$s</string>
+    <string name="play_recording">Play recording</string>
+    <string name="pause_recording">Pause recording</string>
+    <string name="share_recording">Share recording</string>
+    <string name="delete_recording">Delete recording</string>
+    <string name="delete_recording_confirmation">Do you want to delete this recording?</string>
+    <string name="recording_deleted">Recording deleted</string>
+    <string name="recording_delete_failed">Could not delete the recording</string>
+    <string name="recording_playback_failed">Could not play this recording</string>
+    <string name="recording_share_failed">Could not share this recording</string>
+    <string name="recording_quality">Recording quality</string>
+    <string name="recording_quality_light">Light — small files, least work</string>
+    <string name="recording_quality_balanced">Balanced — clear speech (recommended)</string>
+    <string name="recording_quality_high">High detail — larger files, more work</string>
+    <string name="recording_quality_help">Choose Light for a slow phone. About 1 MB per minute in Light, 2 MB in Balanced, or 6 MB in High detail. All save as WAV, without extra compression work. Changes apply to the next recording. Higher settings cannot improve the original call sound. Battery use depends on your phone.</string>
+    <string name="play_beep_when_recording">Play a beep when recording starts</string>
+    <string name="play_beep_when_recording_help">Plays a short local tone whenever recording starts. The other person may not hear it, so notify them yourself and follow local consent laws.</string>
     <string name="open_dialpad_by_default">Open the dialpad by default when the app opens</string>
     <string name="disable_proximity_sensor">Disable proximity sensor during calls</string>
     <string name="disable_swipe_to_answer">Replace swiping at responding to incoming calls with clicking</string>
