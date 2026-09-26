@@ -133,4 +133,21 @@
         Haven't found some strings? There's more at
         https://github.com/FossifyOrg/Commons/tree/master/commons/src/main/res
     -->
+    <string name="voice_trial_title">Voice effects — demo</string>
+    <string name="voice_trial_button_state">Voice effects: %1$s</string>
+    <string name="voice_effect_off">Off — normal call audio</string>
+    <string name="voice_effect_silence">Silence check (5 seconds)</string>
+    <string name="voice_effect_passthrough">Unchanged voice — routing test</string>
+    <string name="voice_effect_button">Voice</string>
+    <string name="voice_effect_girl">Girl-like</string>
+    <string name="voice_effect_boy">Boy-like</string>
+    <string name="voice_effect_chipmunk">Child / Chipmunk</string>
+    <string name="voice_effect_robot">Robot</string>
+    <string name="voice_trial_starting">Starting trial…</string>
+    <string name="voice_trial_stopping">Restoring normal audio…</string>
+    <string name="voice_trial_start">Start test</string>
+    <string name="voice_trial_warning">Device support is unverified. Only test with a consenting person on a nonessential SIM call, using the earpiece. Stop recording and BCP playback first.\n\nStart with Silence check: keep speaking for 5 seconds. The other person should hear silence while you can still hear them. If they hear your original voice, this ROM does not suppress the original microphone path: do not use the effects.\n\nGirl-like raises pitch, Boy-like lowers it, Robot adds a synthetic tone, and Child / Chipmunk raises pitch further. These do not recreate a natural gender or identity.\n\nOther demos last at most 30 seconds. You can change effects during the trial; this does not extend the timer. Off or a long press on FX, leaving this screen, holding the call, muting, or changing audio route stops the trial. Normal, unmodified voice resumes afterward.\n\nAudio may be interrupted. End the test call if sound does not return. These are simple effects, not natural AI voices or privacy protection.</string>
+    <string name="voice_trial_error">Voice trial unavailable or stopped: %1$s</string>
+    <string name="voice_trial_finished">Voice trial ended. Returning to normal call audio.</string>
+    <string name="voice_trial_recording_conflict">Stop the voice trial before recording. Recording and experimental redirection cannot run together yet.</string>
 </resources>

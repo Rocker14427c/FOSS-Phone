@@ -21,6 +21,9 @@
     <uses-permission
         android:name="android.permission.CAPTURE_AUDIO_OUTPUT"
         tools:ignore="ProtectedPermissions" />
+    <!-- Not granted by the default recording module. Opt-in voice trial module only. -->
+    <uses-permission android:name="android.permission.CALL_AUDIO_INTERCEPTION" tools:ignore="ProtectedPermissions" />
+    <uses-permission android:name="android.permission.MODIFY_PHONE_STATE" tools:ignore="ProtectedPermissions" />
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
     <uses-permission android:name="android.telecom.action.CONFIGURE_PHONE_ACCOUNT" />
     <uses-permission android:name="android.permission.VIBRATE" />
@@ -47,7 +50,7 @@
         android:allowBackup="true"
         android:appCategory="productivity"
         android:icon="@mipmap/ic_launcher"
-        android:label="@string/app_launcher_name"
+        android:label="${appLabel}"
         android:roundIcon="@mipmap/ic_launcher"
         android:theme="@style/AppTheme">
 

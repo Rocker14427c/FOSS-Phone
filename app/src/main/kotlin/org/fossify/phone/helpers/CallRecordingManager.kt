@@ -11,6 +11,7 @@ import android.os.Looper
 import android.util.Log
 import androidx.core.content.ContextCompat
 import org.fossify.commons.extensions.toast
+import org.fossify.phone.voice.VoiceChangerManager
 import org.fossify.phone.R
 import org.fossify.phone.extensions.config
 import org.fossify.phone.models.Events
@@ -62,6 +63,10 @@ object CallRecordingManager {
     @Synchronized
     fun start(context: Context, automatic: Boolean = false, label: String? = null) {
         if (!isFeatureEnabled(context)) return
+        if (VoiceChangerManager.isBusy()) {
+            if (!automatic) context.toast(R.string.voice_trial_recording_conflict)
+            return
+        }
         if (automatic && (userStoppedThisSession || automaticFailureReported)) return
         if (!CallManager.hasActiveCall()) return
         val current = session

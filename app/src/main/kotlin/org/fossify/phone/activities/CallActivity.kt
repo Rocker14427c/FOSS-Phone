@@ -22,6 +22,9 @@ import android.view.WindowManager
 import android.view.animation.AccelerateDecelerateInterpolator
 import android.view.animation.OvershootInterpolator
 import android.widget.ImageView
+import androidx.appcompat.app.AlertDialog
+import org.fossify.phone.voice.VoiceChangerManager
+import org.fossify.phone.voice.VoiceEffect
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
 import androidx.core.content.res.ResourcesCompat
@@ -67,6 +70,12 @@ class CallActivity : SimpleActivity() {
             }
         }
 
+    private val requestVoicePermission =
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+            if (granted && CallManager.getState() == Call.STATE_ACTIVE) showVoiceEffects()
+            else if (!granted) toast(R.string.recording_permission_required)
+        }
+
     private var isSpeakerOn = false
     private var isMicrophoneOff = false
     private var isCallEnded = false
@@ -98,7 +107,7 @@ class CallActivity : SimpleActivity() {
 
         updateTextColors(binding.callHolder)
         initButtons()
-        audioManager.mode = AudioManager.MODE_IN_CALL
+        // Telecom owns normal call mode. Voice trials own only a temporary redirection request.
         addLockScreenFlags()
         CallManager.addListener(callCallback)
         updateCallContactInfo(CallManager.getPrimaryCall())
@@ -120,12 +129,20 @@ class CallActivity : SimpleActivity() {
     }
 
     override fun onStop() {
+        VoiceChangerManager.stop() // Prototype never captures while the call UI is hidden.
         super.onStop()
         EventBus.getDefault().unregister(this)
     }
 
     @Subscribe(threadMode = ThreadMode.MAIN)
     fun onRecordingStateChanged(event: Events.RecordingStateChanged) {
+        updateCallRecordingButton()
+        updateVoiceEffectButton()
+    }
+
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    fun onVoiceEffectStateChanged(event: Events.VoiceEffectStateChanged) {
+        updateVoiceEffectButton()
         updateCallRecordingButton()
     }
 
@@ -206,6 +223,13 @@ class CallActivity : SimpleActivity() {
             } else {
                 requestRecordingPermission.launch(Manifest.permission.RECORD_AUDIO)
             }
+        }
+
+        callVoiceEffect.beVisibleIf(VoiceChangerManager.isEnabled(this@CallActivity))
+        callVoiceEffect.setOnClickListener { showVoiceEffects() }
+        callVoiceEffect.setOnLongClickListener {
+            VoiceChangerManager.stop()
+            true
         }
 
         callAdd.setOnClickListener {
@@ -478,6 +502,7 @@ class CallActivity : SimpleActivity() {
     }
 
     private fun changeCallAudioRoute() {
+        VoiceChangerManager.stop()
         val supportAudioRoutes = CallManager.getSupportedAudioRoutes()
         if (supportAudioRoutes.contains(AudioRoute.BLUETOOTH)) {
             createOrUpdateAudioRouteChooser(supportAudioRoutes)
@@ -544,6 +569,7 @@ class CallActivity : SimpleActivity() {
     }
 
     private fun toggleMicrophone() {
+        VoiceChangerManager.stop()
         isMicrophoneOff = !isMicrophoneOff
         audioManager.isMicrophoneMute = isMicrophoneOff
         CallManager.inCallService?.setMuted(isMicrophoneOff)
@@ -566,6 +592,8 @@ class CallActivity : SimpleActivity() {
     }
 
     private fun showDialpad() {
+        binding.callVoiceEffect.beGone()
+        binding.callVoiceEffectLabel.beGone()
         binding.dialpadWrapper.apply {
             updatePadding(
                 bottom = binding.root.bottom - binding.callEnd.top + resources.getDimensionPixelSize(R.dimen.activity_margin)
@@ -594,7 +622,10 @@ class CallActivity : SimpleActivity() {
 
     private fun hideDialpad() {
         binding.dialpadWrapper.animate()
-            .withEndAction { binding.dialpadWrapper.beGone() }
+            .withEndAction {
+                binding.dialpadWrapper.beGone()
+                updateVoiceEffectButton()
+            }
             .setInterpolator(AccelerateDecelerateInterpolator())
             .setDuration(200L)
             .alpha(0f)
@@ -610,6 +641,7 @@ class CallActivity : SimpleActivity() {
     }
 
     private fun toggleHold() {
+        VoiceChangerManager.stop()
         val isOnHold = CallManager.toggleHold()
         toggleButtonColor(binding.callToggleHold, isOnHold)
         binding.callToggleHold.contentDescription = getString(if (isOnHold) R.string.resume_call else R.string.hold_call)
@@ -739,6 +771,7 @@ class CallActivity : SimpleActivity() {
 
         updateCallAudioState(CallManager.getCallAudioRoute())
         updateCallRecordingButton()
+        updateVoiceEffectButton()
     }
 
     private fun startCallRecording() {
@@ -767,8 +800,68 @@ class CallActivity : SimpleActivity() {
             )
             toggleButtonColor(this, recording)
             val callActive = CallManager.getState() == Call.STATE_ACTIVE
-            setActionButtonEnabled(this, enabled = !saving && (recording || callActive) && !isCallEnded)
+            setActionButtonEnabled(this, enabled = !saving && !VoiceChangerManager.isBusy() && (recording || callActive) && !isCallEnded)
         }
+    }
+
+    private fun voiceEffectLabel(effect: VoiceEffect?): Int = when (effect) {
+        null -> R.string.voice_effect_off
+        VoiceEffect.SILENCE_CHECK -> R.string.voice_effect_silence
+        VoiceEffect.PASSTHROUGH -> R.string.voice_effect_passthrough
+        VoiceEffect.GIRL -> R.string.voice_effect_girl
+        VoiceEffect.BOY -> R.string.voice_effect_boy
+        VoiceEffect.CHIPMUNK -> R.string.voice_effect_chipmunk
+        VoiceEffect.ROBOT -> R.string.voice_effect_robot
+    }
+
+    private fun updateVoiceEffectButton() {
+        val active = VoiceChangerManager.isBusy()
+        val visible = VoiceChangerManager.isEnabled(this) && !binding.dialpadWrapper.isVisible() &&
+            !isCallEnded && (active || CallManager.getState() == Call.STATE_ACTIVE)
+        binding.callVoiceEffect.beVisibleIf(visible)
+        binding.callVoiceEffectLabel.beVisibleIf(visible)
+        val stateLabel = when (VoiceChangerManager.state()) {
+            VoiceChangerManager.State.STARTING -> getString(R.string.voice_trial_starting)
+            VoiceChangerManager.State.STOPPING -> getString(R.string.voice_trial_stopping)
+            else -> getString(voiceEffectLabel(VoiceChangerManager.effect()))
+        }
+        binding.callVoiceEffect.contentDescription = getString(R.string.voice_trial_button_state, stateLabel)
+        binding.callVoiceEffectLabel.text = if (active) stateLabel else getString(R.string.voice_effect_button)
+        toggleButtonColor(binding.callVoiceEffect, active)
+        setActionButtonEnabled(binding.callVoiceEffect,
+            active || (!CallRecordingManager.isRecording() && CallManager.getState() == Call.STATE_ACTIVE && !isCallEnded))
+    }
+
+    private fun showVoiceEffects() {
+        if (!VoiceChangerManager.isEnabled(this)) return
+        if (!VoiceChangerManager.isBusy() && ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+            requestVoicePermission.launch(Manifest.permission.RECORD_AUDIO)
+            return
+        }
+        val choices = listOf<VoiceEffect?>(null) + VoiceEffect.DEMO_PRESETS +
+            listOf(VoiceEffect.SILENCE_CHECK, VoiceEffect.PASSTHROUGH)
+        AlertDialog.Builder(this)
+            .setTitle(R.string.voice_trial_title)
+            .setSingleChoiceItems(choices.map { getString(voiceEffectLabel(it)) }.toTypedArray(),
+                choices.indexOf(VoiceChangerManager.effect())) { dialog, index ->
+                dialog.dismiss()
+                val selected = choices[index]
+                if (selected == null) {
+                    VoiceChangerManager.stop()
+                } else if (VoiceChangerManager.isBusy()) {
+                    VoiceChangerManager.select(this, selected)
+                } else {
+                    AlertDialog.Builder(this)
+                        .setTitle(R.string.voice_trial_title)
+                        .setMessage(R.string.voice_trial_warning)
+                        .setNegativeButton(android.R.string.cancel, null)
+                        .setPositiveButton(R.string.voice_trial_start) { _, _ ->
+                            VoiceChangerManager.select(this, selected)
+                        }.show()
+                }
+            }
+            .setNegativeButton(android.R.string.cancel, null)
+            .show()
     }
 
     private fun updateCallOnHoldState(call: Call?) {
@@ -834,6 +927,7 @@ class CallActivity : SimpleActivity() {
     }
 
     private fun endCall() {
+        VoiceChangerManager.stop()
         CallManager.reject()
         disableProximitySensor()
         audioRouteChooserDialog?.dismissAllowingStateLoss()
@@ -946,7 +1040,7 @@ class CallActivity : SimpleActivity() {
     }
 
     private fun disableAllActionButtons() {
-        (binding.ongoingCallHolder.children + binding.callEnd)
+        (binding.ongoingCallHolder.children + binding.callEnd + binding.callVoiceEffect)
             .filter { it is ImageView && it.isVisible() }
             .forEach { view ->
                 setActionButtonEnabled(button = view as ImageView, enabled = false)

@@ -9,6 +9,8 @@ plugins {
     alias(libs.plugins.detekt)
 }
 
+val experimentalVoiceChanger = providers.gradleProperty("experimentalVoiceChanger").orNull == "true"
+
 val keystorePropertiesFile: File = rootProject.file("keystore.properties")
 val keystoreProperties = Properties()
 if (keystorePropertiesFile.exists()) {
@@ -36,6 +38,9 @@ android {
         targetSdk = project.libs.versions.app.build.targetSDK.get().toInt()
         versionName = project.property("VERSION_NAME").toString()
         versionCode = project.property("VERSION_CODE").toString().toInt()
+        // Explicit lab build only; normal recording/Play builds remain unchanged by default.
+        resValue("bool", "experimental_voice_changer", "false")
+        manifestPlaceholders["appLabel"] = "@string/app_launcher_name"
     }
 
     signingConfigs {
@@ -59,6 +64,8 @@ android {
     }
 
     buildFeatures {
+        // AGP 9 disables generated resValue resources unless explicitly enabled.
+        resValues = true
         viewBinding = true
         buildConfig = true
     }
@@ -82,9 +89,19 @@ android {
 
     flavorDimensions.add("variants")
     productFlavors {
-        register("core")
-        register("foss")
-        register("gplay")
+        listOf("core", "foss").forEach { variant ->
+            register(variant) {
+                if (experimentalVoiceChanger) {
+                    // Install beside, never over, the working recorder/debug-signing identity.
+                    applicationIdSuffix = ".voice_trial"
+                    manifestPlaceholders["appLabel"] = "FOSS Phone Voice Trial"
+                    resValue("bool", "experimental_voice_changer", "true")
+                }
+            }
+        }
+        register("gplay") {
+            resValue("bool", "experimental_voice_changer", "false")
+        }
     }
 
     sourceSets {

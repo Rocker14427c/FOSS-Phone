@@ -14,6 +14,7 @@ import android.telecom.InCallService
 import org.fossify.commons.extensions.canUseFullScreenIntent
 import org.fossify.commons.extensions.hasPermission
 import org.fossify.commons.helpers.PERMISSION_POST_NOTIFICATIONS
+import org.fossify.phone.voice.VoiceChangerManager
 import org.fossify.phone.R
 import org.fossify.phone.activities.RecordingsActivity
 import org.fossify.phone.helpers.STOP_RECORDING
@@ -38,8 +39,14 @@ class CallService : InCallService() {
     private val callNotificationManager by lazy { CallNotificationManager(this) }
 
     private val callListener = object : Call.Callback() {
+        override fun onDetailsChanged(call: Call, details: Call.Details) {
+            super.onDetailsChanged(call, details)
+            VoiceChangerManager.onCallChanged() // Revoke if emergency/account/conference details change.
+        }
+
         override fun onStateChanged(call: Call, state: Int) {
             super.onStateChanged(call, state)
+            VoiceChangerManager.onCallChanged()
             if (CallManager.getPhoneState() == NoCall) {
                 callNotificationManager.cancelNotification()
             } else {
@@ -56,6 +63,7 @@ class CallService : InCallService() {
 
     override fun onCallAdded(call: Call) {
         super.onCallAdded(call)
+        VoiceChangerManager.onCallChanged()
         CallManager.onCallAdded(call)
         CallManager.inCallService = this
         call.registerCallback(callListener)
@@ -91,6 +99,7 @@ class CallService : InCallService() {
 
     override fun onCallRemoved(call: Call) {
         super.onCallRemoved(call)
+        VoiceChangerManager.onCallChanged()
         call.unregisterCallback(callListener)
         val wasPrimaryCall = call == CallManager.getPrimaryCall()
         CallManager.onCallRemoved(call)
@@ -133,6 +142,7 @@ class CallService : InCallService() {
     override fun onCallAudioStateChanged(audioState: CallAudioState?) {
         super.onCallAudioStateChanged(audioState)
         if (audioState != null) {
+            if (audioState.isMuted || audioState.route != CallAudioState.ROUTE_EARPIECE) VoiceChangerManager.onCallChanged()
             CallManager.onAudioStateChanged(audioState)
         }
     }
@@ -186,6 +196,7 @@ class CallService : InCallService() {
     }
 
     override fun onDestroy() {
+        VoiceChangerManager.stop()
         CallRecordingManager.serviceDestroyed(this)
         CallRecordingManager.endSession()
         EventBus.getDefault().unregister(this)

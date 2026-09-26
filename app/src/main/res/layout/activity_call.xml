@@ -166,6 +166,36 @@
         app:layout_constraintTop_toTopOf="@+id/call_sim_image"
         tools:text="1" />
 
+    <androidx.appcompat.widget.AppCompatImageButton
+        android:id="@+id/call_voice_effect"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:layout_marginTop="@dimen/activity_margin"
+        android:layout_marginEnd="@dimen/activity_margin"
+        android:background="@drawable/circle_background"
+        android:contentDescription="@string/voice_trial_title"
+        android:padding="12dp"
+        android:src="@drawable/ic_voice_effect_vector"
+        android:visibility="gone"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/on_hold_status_holder" />
+
+    <org.fossify.commons.views.MyTextView
+        android:id="@+id/call_voice_effect_label"
+        android:layout_width="72dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:ellipsize="end"
+        android:gravity="center"
+        android:importantForAccessibility="no"
+        android:maxLines="2"
+        android:text="@string/voice_effect_button"
+        android:textSize="11sp"
+        android:visibility="gone"
+        app:layout_constraintEnd_toEndOf="@id/call_voice_effect"
+        app:layout_constraintStart_toStartOf="@id/call_voice_effect"
+        app:layout_constraintTop_toBottomOf="@id/call_voice_effect" />
+
     <androidx.constraintlayout.widget.Guideline
         android:id="@+id/guideline"
         android:layout_width="wrap_content"
@@ -290,6 +320,8 @@
             android:src="@drawable/ic_record_call_vector"
             app:layout_constraintDimensionRatio="1:1"
             app:layout_constraintHeight_max="@dimen/call_control_button_size" />
+
+
 
         <ImageView
             android:id="@+id/call_merge"
