@@ -6,7 +6,9 @@ import android.content.Intent
 import org.fossify.phone.activities.CallActivity
 import org.fossify.phone.helpers.ACCEPT_CALL
 import org.fossify.phone.helpers.CallManager
+import org.fossify.phone.helpers.CallRecordingManager
 import org.fossify.phone.helpers.DECLINE_CALL
+import org.fossify.phone.helpers.STOP_RECORDING
 
 class CallActionReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
@@ -17,6 +19,10 @@ class CallActionReceiver : BroadcastReceiver() {
             }
 
             DECLINE_CALL -> CallManager.reject()
+
+            STOP_RECORDING -> {
+                CallRecordingManager.stop(stoppedByUser = true)
+            }
         }
     }
 }

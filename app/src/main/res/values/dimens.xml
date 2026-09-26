@@ -12,6 +12,11 @@
     <dimen name="call_control_button_size">72dp</dimen>
     <dimen name="recyclerview_fab_padding">100dp</dimen>
 
+    <!-- call recordings list -->
+    <dimen name="recording_icon_size">40dp</dimen>
+    <dimen name="recording_icon_padding">4dp</dimen>
+    <dimen name="recording_info_text_size">14sp</dimen>
+
     <dimen name="caller_name_text_size">34sp</dimen>
     <dimen name="call_status_text_size">20sp</dimen>
 

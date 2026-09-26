@@ -8,6 +8,11 @@
 /captures
 keystore.jks
 keystore.properties
+*.p12
 fastlane/fastlane.json
 fastlane/report.xml
 .kotlin/
+
+# Python tooling
+__pycache__/
+*.pyc

@@ -54,6 +54,12 @@ class CallManager {
             }
         }
 
+        fun hasActiveCall(): Boolean = calls.any { it.getStateCompat() == Call.STATE_ACTIVE }
+
+        fun hasOngoingCall(): Boolean = calls.any {
+            it.getStateCompat() != Call.STATE_DISCONNECTED && it.getStateCompat() != Call.STATE_DISCONNECTING
+        }
+
         fun getPhoneState(): PhoneState {
             return when (calls.size) {
                 0 -> NoCall

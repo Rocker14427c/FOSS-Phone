@@ -22,6 +22,34 @@ The Fossify Phone App is designed for optimal resource usage, contributing to ex
 
 Download the Fossify Phone App now and step into a mobile world where privacy seamlessly blends with functionality. Your journey towards a safer, personalized mobile experience starts here.
 
+## Integrated call recording
+
+Calling and recording run in **one Phone app**. The recording backend follows BCR's raw-audio
+approach: an in-process worker reads `AudioRecord` / `VOICE_CALL` PCM, detects digital silence,
+and finalizes lossless WAV files off the call UI thread. No BCR app or other recorder is needed.
+
+**A supported privileged/system installation is required.** Rooting the phone, installing the
+APK normally, or making it the default dialer does not grant `CAPTURE_AUDIO_OUTPUT`. The app
+now refuses recording without that grant instead of falling back to a potentially silent
+microphone recording. ROM/vendor support for both voices is still required.
+
+Enable **Automatically record calls** in Settings or use the in-call recording control. A
+the existing call service temporarily runs in the foreground to keep capture/finalization alive; one file covers the call session,
+including swaps/conferences, with held audio skipped. Recordings can be played, shared and
+deleted in **Manage call recordings**. Older M4A recordings are still supported. Choose **Light**, **Balanced**, or **High detail**: approximately 1, 2, or 6 MB/minute of WAV.
+Light defaults on Android low-RAM devices; Balanced defaults elsewhere. One worker uses reusable
+buffers and batched reads. No extra recording service or always-running recorder is added.
+Battery savings require device measurements.
+
+- [Installation, opt-in Magisk module builder, rollback and device testing](docs/call-recording.md)
+- [Review of the four recent commits and BCR architecture](docs/call-recording-review.md)
+
+The module contains this same dialer APK and its permission allowlist—not another recording app.
+The Google Play flavor keeps recording disabled. Notify participants yourself and follow local
+consent laws: the optional local beep is not guaranteed to reach the other party.
+
+This replacement has not yet been device-validated on the Realme Narzo 50A / Axion 2.7 Android 16.
+
 ➡️ Explore more Fossify apps: https://www.fossify.org<br>
 ➡️ Open-Source Code: https://www.github.com/FossifyOrg<br>
 ➡️ Join the community on Reddit: https://www.reddit.com/r/Fossify<br>

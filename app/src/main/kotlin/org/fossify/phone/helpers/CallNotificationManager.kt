@@ -8,6 +8,7 @@ import android.app.NotificationManager.IMPORTANCE_HIGH
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.graphics.Icon
 import android.telecom.Call
 import android.widget.RemoteViews
 import org.fossify.commons.extensions.notificationManager
@@ -22,6 +23,7 @@ class CallNotificationManager(private val context: Context) {
         private const val CALL_NOTIFICATION_ID = 42
         private const val ACCEPT_CALL_CODE = 0
         private const val DECLINE_CALL_CODE = 1
+        private const val STOP_RECORDING_CODE = 2
     }
 
     private val notificationManager = context.notificationManager
@@ -61,6 +63,16 @@ class CallNotificationManager(private val context: Context) {
                     PendingIntent.FLAG_CANCEL_CURRENT or PendingIntent.FLAG_MUTABLE
                 )
 
+            val stopRecordingIntent = Intent(context, CallActionReceiver::class.java)
+            stopRecordingIntent.action = STOP_RECORDING
+            val stopRecordingPendingIntent =
+                PendingIntent.getBroadcast(
+                    context,
+                    STOP_RECORDING_CODE,
+                    stopRecordingIntent,
+                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+                )
+
             var callerName = callContact.name.ifEmpty { context.getString(R.string.unknown_caller) }
             if (callContact.numberLabel.isNotEmpty()) {
                 callerName += " - ${callContact.numberLabel}"
@@ -74,9 +86,17 @@ class CallNotificationManager(private val context: Context) {
                 else -> R.string.ongoing_call
             }
 
+            val isRecording =
+                CallRecordingManager.isFeatureEnabled(context) && CallRecordingManager.isRecording()
+            val statusText = if (isRecording) {
+                "${context.getString(contentTextId)} · ${context.getString(R.string.call_recording_in_progress)}"
+            } else {
+                context.getString(contentTextId)
+            }
+
             val collapsedView = RemoteViews(context.packageName, R.layout.call_notification).apply {
                 setText(R.id.notification_caller_name, callerName)
-                setText(R.id.notification_call_status, context.getString(contentTextId))
+                setText(R.id.notification_call_status, statusText)
                 setVisibleIf(R.id.notification_accept_call, callState == Call.STATE_RINGING)
 
                 setOnClickPendingIntent(R.id.notification_decline_call, declinePendingIntent)
@@ -102,6 +122,15 @@ class CallNotificationManager(private val context: Context) {
 
             if (isHighPriority) {
                 builder.setFullScreenIntent(openAppPendingIntent, true)
+            }
+
+            if (isRecording && CallRecordingManager.state() != CallRecordingManager.State.STOPPING) {
+                val stopRecordingAction = Notification.Action.Builder(
+                    Icon.createWithResource(context, R.drawable.ic_stop_recording_vector),
+                    context.getString(R.string.stop_call_recording),
+                    stopRecordingPendingIntent
+                ).build()
+                builder.addAction(stopRecordingAction)
             }
 
             val notification = builder.build()

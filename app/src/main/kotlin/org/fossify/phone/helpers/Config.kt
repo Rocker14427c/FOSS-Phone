@@ -1,5 +1,6 @@
 package org.fossify.phone.helpers
 
+import android.app.ActivityManager
 import android.content.Context
 import android.net.Uri
 import android.telecom.PhoneAccountHandle
@@ -11,12 +12,21 @@ import org.fossify.commons.helpers.BaseConfig
 import org.fossify.phone.extensions.getPhoneAccountHandleModel
 import org.fossify.phone.extensions.putPhoneAccountHandle
 import org.fossify.phone.models.SpeedDial
+import org.fossify.phone.recording.RecordingQuality
 import androidx.core.content.edit
 import java.util.Locale
 
 class Config(context: Context) : BaseConfig(context) {
     companion object {
         fun newInstance(context: Context) = Config(context)
+    }
+
+    private val defaultRecordingQuality by lazy {
+        if (context.getSystemService(ActivityManager::class.java)?.isLowRamDevice == true) {
+            RecordingQuality.LIGHT
+        } else {
+            RecordingQuality.BALANCED
+        }
     }
 
     private val regionHint: String by lazy {
@@ -135,4 +145,17 @@ class Config(context: Context) : BaseConfig(context) {
     var alwaysShowFullscreen: Boolean
         get() = prefs.getBoolean(ALWAYS_SHOW_FULLSCREEN, false)
         set(alwaysShowFullscreen) = prefs.edit().putBoolean(ALWAYS_SHOW_FULLSCREEN, alwaysShowFullscreen).apply()
+
+    var autoRecordCalls: Boolean
+        get() = prefs.getBoolean(AUTO_RECORD_CALLS, false)
+        set(autoRecordCalls) = prefs.edit().putBoolean(AUTO_RECORD_CALLS, autoRecordCalls).apply()
+
+    var recordingQuality: RecordingQuality
+        get() = RecordingQuality.fromPreference(prefs.getInt(RECORDING_QUALITY, defaultRecordingQuality.preferenceId))
+        set(value) = prefs.edit().putInt(RECORDING_QUALITY, value.preferenceId).apply()
+
+    var playBeepWhenRecording: Boolean
+        get() = prefs.getBoolean(PLAY_BEEP_WHEN_RECORDING, false)
+        set(playBeepWhenRecording) =
+            prefs.edit().putBoolean(PLAY_BEEP_WHEN_RECORDING, playBeepWhenRecording).apply()
 }

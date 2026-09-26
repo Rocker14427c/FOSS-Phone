@@ -1,9 +1,11 @@
 package org.fossify.phone.activities
 
+import android.Manifest
 import android.annotation.SuppressLint
 import android.app.KeyguardManager
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.graphics.drawable.LayerDrawable
 import android.graphics.drawable.RippleDrawable
 import android.media.AudioManager
@@ -20,6 +22,8 @@ import android.view.WindowManager
 import android.view.animation.AccelerateDecelerateInterpolator
 import android.view.animation.OvershootInterpolator
 import android.widget.ImageView
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.ContextCompat
 import androidx.core.content.res.ResourcesCompat
 import androidx.core.os.postDelayed
 import androidx.core.view.children
@@ -37,6 +41,10 @@ import org.fossify.phone.extensions.*
 import org.fossify.phone.helpers.*
 import org.fossify.phone.models.AudioRoute
 import org.fossify.phone.models.CallContact
+import org.fossify.phone.models.Events
+import org.greenrobot.eventbus.EventBus
+import org.greenrobot.eventbus.Subscribe
+import org.greenrobot.eventbus.ThreadMode
 import kotlin.math.max
 import kotlin.math.min
 
@@ -50,6 +58,14 @@ class CallActivity : SimpleActivity() {
     }
 
     private val binding by viewBinding(ActivityCallBinding::inflate)
+    private val requestRecordingPermission =
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+            if (granted && CallManager.getState() == Call.STATE_ACTIVE) {
+                startCallRecording()
+            } else if (!granted) {
+                toast(R.string.recording_permission_required)
+            }
+        }
 
     private var isSpeakerOn = false
     private var isMicrophoneOff = false
@@ -96,6 +112,21 @@ class CallActivity : SimpleActivity() {
     override fun onResume() {
         super.onResume()
         updateState()
+    }
+
+    override fun onStart() {
+        super.onStart()
+        EventBus.getDefault().register(this)
+    }
+
+    override fun onStop() {
+        super.onStop()
+        EventBus.getDefault().unregister(this)
+    }
+
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    fun onRecordingStateChanged(event: Events.RecordingStateChanged) {
+        updateCallRecordingButton()
     }
 
     override fun onDestroy() {
@@ -161,6 +192,20 @@ class CallActivity : SimpleActivity() {
 
         callToggleHold.setOnClickListener {
             toggleHold()
+        }
+
+        callRecord.beVisibleIf(CallRecordingManager.isFeatureEnabled(this@CallActivity))
+        callRecord.setOnClickListener {
+            if (CallRecordingManager.isRecording()) {
+                CallRecordingManager.stop(stoppedByUser = true)
+                updateCallRecordingButton()
+            } else if (!CallRecordingManager.hasCallAudioPermission(this@CallActivity)) {
+                toast(R.string.call_recording_privileged_required)
+            } else if (ContextCompat.checkSelfPermission(this@CallActivity, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
+                startCallRecording()
+            } else {
+                requestRecordingPermission.launch(Manifest.permission.RECORD_AUDIO)
+            }
         }
 
         callAdd.setOnClickListener {
@@ -240,7 +285,7 @@ class CallActivity : SimpleActivity() {
         val inactiveColor = getInactiveButtonColor()
         arrayOf(
             callToggleMicrophone, callToggleSpeaker, callDialpad,
-            callToggleHold, callAdd, callSwap, callMerge, callManage
+            callToggleHold, callAdd, callSwap, callMerge, callManage, callRecord
         ).forEach {
             it.applyColorFilter(bgColor.getContrastColor())
             it.background.applyColorFilter(inactiveColor)
@@ -248,7 +293,7 @@ class CallActivity : SimpleActivity() {
 
         arrayOf(
             callToggleMicrophone, callToggleSpeaker, callDialpad,
-            callToggleHold, callAdd, callSwap, callMerge, callManage
+            callToggleHold, callAdd, callSwap, callMerge, callManage, callRecord
         ).forEach { imageView ->
             imageView.setOnLongClickListener {
                 if (!imageView.contentDescription.isNullOrEmpty()) {
@@ -693,6 +738,37 @@ class CallActivity : SimpleActivity() {
         }
 
         updateCallAudioState(CallManager.getCallAudioRoute())
+        updateCallRecordingButton()
+    }
+
+    private fun startCallRecording() {
+        CallRecordingManager.start(this, label = recordingLabel())
+        updateCallRecordingButton()
+    }
+
+    private fun recordingLabel(): String {
+        return callContact?.number?.takeIf { it.isNotEmpty() }
+            ?: CallManager.getPrimaryCall()?.details?.handle?.schemeSpecificPart.orEmpty()
+    }
+
+    private fun updateCallRecordingButton() {
+        if (!CallRecordingManager.isFeatureEnabled(this)) {
+            binding.callRecord.beGone()
+            return
+        }
+
+        val recording = CallRecordingManager.isRecording()
+        binding.callRecord.apply {
+            setImageResource(if (recording) R.drawable.ic_stop_recording_vector else R.drawable.ic_record_call_vector)
+            val saving = CallRecordingManager.state() == CallRecordingManager.State.STOPPING
+            contentDescription = getString(
+                if (saving) R.string.call_recording_saving
+                else if (recording) R.string.stop_call_recording else R.string.start_call_recording
+            )
+            toggleButtonColor(this, recording)
+            val callActive = CallManager.getState() == Call.STATE_ACTIVE
+            setActionButtonEnabled(this, enabled = !saving && (recording || callActive) && !isCallEnded)
+        }
     }
 
     private fun updateCallOnHoldState(call: Call?) {

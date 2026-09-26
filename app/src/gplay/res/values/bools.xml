@@ -3,4 +3,6 @@
     <bool name="show_donate_in_about">false</bool>
     <bool name="hide_google_relations">false</bool>
     <bool name="pretend_thank_you_installed">true</bool>
+    <!-- Google Play policy does not allow call recording, keep the feature out of this flavor. -->
+    <bool name="show_call_recording">false</bool>
 </resources>

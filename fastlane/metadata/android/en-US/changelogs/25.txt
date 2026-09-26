@@ -1,0 +1,5 @@
+Integrated call-audio recorder (test release; privileged installation and ROM support required).
+Choose Light, Balanced or High detail. Light defaults on Android low-RAM devices.
+Reuse the existing call service, with one worker and batched reads; no extra recording service.
+Save PCM/WAV, check actual samples for silence and preserve older M4A recordings.
+Include a matching Magisk module, installation instructions and checksums.
