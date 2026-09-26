@@ -8,7 +8,7 @@ import android.app.NotificationManager.IMPORTANCE_HIGH
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
-import android.graphics.Icon
+import android.graphics.drawable.Icon
 import android.telecom.Call
 import android.widget.RemoteViews
 import org.fossify.commons.extensions.notificationManager

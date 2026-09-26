@@ -63,7 +63,7 @@ class RecordingsActivity : SimpleActivity(), RecordingItemListener {
 
     override fun onResume() {
         super.onResume()
-        setupTopAppBar(binding.recordingsToolbar, NavigationIcon.Arrow)
+        setupTopAppBar(binding.recordingsAppbar, NavigationIcon.Arrow)
     }
 
     override fun onDestroy() {

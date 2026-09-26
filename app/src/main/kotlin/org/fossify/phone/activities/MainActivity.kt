@@ -230,7 +230,7 @@ class MainActivity : SimpleActivity() {
                     R.id.sort -> showSortingDialog(showCustomSorting = getCurrentFragment() is FavoritesFragment)
                     R.id.filter -> showFilterDialog()
                     R.id.more_apps_from_us -> launchMoreAppsFromUsIntent()
-                    R.id.call_recordings -> startActivity(Intent(this, RecordingsActivity::class.java))
+                    R.id.call_recordings -> startActivity(Intent(this@MainActivity, RecordingsActivity::class.java))
                     R.id.settings -> launchSettings()
                     R.id.change_view_type -> changeViewType()
                     R.id.column_count -> changeColumnCount()
