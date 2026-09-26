@@ -164,3 +164,28 @@ python3 -m unittest discover -s tools -p 'test_*.py' -v
 
 A real-device regression pass and successful APK build are still required before describing
 this implementation as production-ready.
+
+## Reproducible local build environment
+
+`tools/android-build/Dockerfile` defines JDK 17, Python, Android SDK 36 and build-tools 36.0.0.
+It deliberately does not install the removed legacy `tools` package. With Docker and network
+access to the Android/Gradle/Maven repositories:
+
+```sh
+docker build -f tools/android-build/Dockerfile -t foss-phone-builder .
+mkdir -p build/recording-artifacts
+docker run --rm \
+  -v "$PWD/build/recording-artifacts:/workspace/build/recording-artifacts" \
+  foss-phone-builder
+```
+
+Alternatively, with JDK 17/Android SDK 36 already installed, run `bash tools/build-recording.sh`.
+The script runs the unit tests and both flavor builds, verifies the APK signature, builds the
+module, verifies that its embedded APK is identical, and writes SHA-256 checksums. Choose an
+empty `OUTPUT_DIR` for another run; it will not mix new APKs with stale modules. Private signing
+keys, Git credentials, existing APKs and build caches are excluded from the Docker context.
+
+This is a debug test build, not a stable-signing or device-compatibility guarantee. The Docker
+build could not be executed in the Arena workspace: Docker/JDK/SDK are absent and direct
+Android, Gradle, Maven and JDK downloads fail at the network layer. No module is advertised as
+built or released until the actual build completes successfully.
