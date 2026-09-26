@@ -76,15 +76,14 @@ not disable SELinux, grant all permissions, patch the HAL or run a root audio da
 
 ### Building on GitHub
 
-`ci/build-and-release-recorder.yml` is currently an **inactive template**: GitHub rejected
-uploading it under `.github/workflows` because the Arena GitHub App lacks `workflows` permission,
-even after reconnecting. No new APK/module release has been built or published in this session.
+The repository owner activated `.github/workflows/build-and-release-recorder.yml` on the
+session branch. Arena still lacks permission to edit workflow files, so
+`ci/build-and-release-recorder.yml` is the maintained reference template. The first run stopped
+in SDK setup before compilation because the setup action defaults to the removed `tools`
+package. The template fixes this with `packages: 'platform-tools'`; the active workflow must
+include that input too. No new APK/module has been published as of this setup check.
 
-To activate it, an authorized repository owner must copy this template to
-`.github/workflows/call-recording-checks.yml` **on `arena/01a0dcd1-foss-phone`** using GitHub's UI,
-or restore workflow-write access to the Arena connection. Its branch push trigger will then run;
-manual dispatch is also supported. Do not put it on a different branch, since publication is
-restricted to this session branch. It tests PCM handling, builds `foss` and `gplay`, and packages the `foss` **debug APK
+It tests PCM handling, builds `foss` and `gplay`, and packages the `foss` **debug APK
 and its matching module ZIP** as one artifact. On this session branch, successful checks publish a prerelease with matching APK/module, checksums and signing-certificate information. Existing releases are never overwritten. CI-generated
 debug signing keys can differ between runs: these artifacts are for testing, not stable
 updates to a release-signed installation.
