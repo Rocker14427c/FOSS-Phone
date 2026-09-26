@@ -1,0 +1,13 @@
+Call voice-effects references and adaptations
+
+Basic Call Player (BCP), chenxiaolong, GPL-3.0
+https://github.com/chenxiaolong/BCP/tree/57977e5526b6ad3983d7db9c8a64236e6f1eff15
+TelephonyPcmOutput adapts the AudioTrack construction/routing in PlayerThread.kt.
+File decoding is not included. The output is fed live PCM by this app instead.
+BCP does not provide the microphone-replacement or downlink-relay mechanism.
+See BCP-GPL-3.0.txt and the project LICENSE for license terms.
+
+Soundpipe, Paul Batchelor, MIT
+https://github.com/PaulBatchelor/Soundpipe/tree/3efb43bdabd0ed23b17c694292b5a79f1692a3ea
+VoiceEffectProcessor adapts modules/pshift.c to Kotlin with bounded buffers.
+See Soundpipe-MIT.txt for the upstream copyright and permission notice.

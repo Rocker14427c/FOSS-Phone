@@ -33,8 +33,7 @@ APK normally, or making it the default dialer does not grant `CAPTURE_AUDIO_OUTP
 now refuses recording without that grant instead of falling back to a potentially silent
 microphone recording. ROM/vendor support for both voices is still required.
 
-Enable **Automatically record calls** in Settings or use the in-call recording control. A
-the existing call service temporarily runs in the foreground to keep capture/finalization alive; one file covers the call session,
+Enable **Automatically record calls** in Settings or use the in-call recording control. The existing call service temporarily runs in the foreground to keep capture/finalization alive; one file covers the call session,
 including swaps/conferences, with held audio skipped. Recordings can be played, shared and
 deleted in **Manage call recordings**. Older M4A recordings are still supported. Choose **Light**, **Balanced**, or **High detail**: approximately 1, 2, or 6 MB/minute of WAV.
 Light defaults on Android low-RAM devices; Balanced defaults elsewhere. One worker uses reusable
@@ -48,7 +47,19 @@ The module contains this same dialer APK and its permission allowlist—not anot
 The Google Play flavor keeps recording disabled. Notify participants yourself and follow local
 consent laws: the optional local beep is not guaranteed to reach the other party.
 
-This replacement has not yet been device-validated on the Realme Narzo 50A / Axion 2.7 Android 16.
+The user reports recording works on the Realme Narzo 50A / Axion 2.7 Android 16.
+Broader route compatibility and battery use still require device testing.
+
+## Experimental live voice effects
+
+The demo ports **BCP**'s telephony AudioTrack output (BCP playback is now confirmed by
+the user on their phone) and adapts the MIT-licensed **Soundpipe** pitch core for live PCM.
+A compact in-call **FX** button offers Girl-like, Boy-like, Robot and Child/Chipmunk. This is a disabled-by-default,
+short-duration prototype—not a verified voice-changing release. The opt-in lab APK
+and module use separate identities to preserve the working recorder. No extra effects
+app is required; simultaneous recording/effects and other audio routes are not supported yet.
+
+See [reference revisions, architecture, tests and remaining hardware gates](docs/voice-changer.md).
 
 ➡️ Explore more Fossify apps: https://www.fossify.org<br>
 ➡️ Open-Source Code: https://www.github.com/FossifyOrg<br>

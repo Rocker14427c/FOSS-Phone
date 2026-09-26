@@ -1,0 +1,5 @@
+Experimental in-call voice demo for privileged installations:
+- Compact FX button with Girl-like, Boy-like, Robot and Child/Chipmunk presets.
+- BCP-inspired telephony output fed by live microphone processing.
+- Separate demo package/module, finite trials and a dry-voice silence check.
+- Requires device validation; earpiece only, no simultaneous recording/effects yet.

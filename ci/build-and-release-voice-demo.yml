@@ -1,0 +1,79 @@
+name: Build and release voice demo
+
+on:
+  workflow_dispatch:
+  push:
+    branches: ["arena/01a0dcd1-foss-phone"]
+  pull_request:
+    paths:
+      - "app/**"
+      - "gradle/**"
+      - "*.gradle.kts"
+      - "gradle.properties"
+      - "tools/**"
+      - ".github/workflows/build-and-release-recorder.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: phone-demo-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  voice-demo:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: 'platform-tools'
+          log-accepted-android-sdk-licenses: false
+      - name: Install SDK packages
+        run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
+      - name: Test, build and verify isolated voice demo
+        env:
+          EXPERIMENTAL_VOICE_CHANGER: "1"
+          OUTPUT_DIR: build/voice-demo-artifacts
+        run: tools/build-recording.sh
+      - name: Upload installable demo artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: voice-demo
+          path: build/voice-demo-artifacts/
+      - name: Publish experimental demo (device validation still required)
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/arena/01a0dcd1-foss-phone'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          version=$(sed -n 's/^VERSION_NAME=//p' gradle.properties)
+          tag="v${version}-voice-demo"
+          if gh release view "$tag" >/dev/null 2>&1; then
+            echo "Release $tag already exists; published binaries will not be replaced."
+            exit 1
+          fi
+          gh release create "$tag" build/voice-demo-artifacts/* \
+            --target "$GITHUB_SHA" --draft --prerelease --latest=false \
+            --title "FOSS Phone $version — experimental voice demo" \
+            --notes-file docs/voice-demo-release-notes.md
+          gh release edit "$tag" --draft=false --prerelease --latest=false
+      - name: Upload unit test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: voice-demo-test-results
+          path: app/build/reports/tests/
+          if-no-files-found: ignore

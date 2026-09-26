@@ -1,0 +1,7 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp" android:height="24dp"
+    android:viewportWidth="24" android:viewportHeight="24">
+    <!-- F X: a compact in-call voice-effects action. -->
+    <path android:fillColor="@color/md_grey_black"
+        android:pathData="M3,5h8v3H6v3h4v3H6v5H3zM12,5h3l2.5,4.5L20,5h3l-4,7l4,7h-3l-2.5,-4.5L15,19h-3l4,-7z" />
+</vector>
