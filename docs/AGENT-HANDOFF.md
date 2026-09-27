@@ -301,6 +301,36 @@ Never toggle `Set_BGS_UL_Mute` or global mic mute as a guessed fix; those could 
 the processed voice too. Do not write recovery properties or assume a success return
 means the vendor honored an unknown parameter.
 
+### 2026-09-27 addendum: vendor parameter route proven dead on this device
+
+Live process map (read-only shells): pid 1040 `/vendor/bin/hw/android.hardware.audio.service`
+is the **32-bit** process and is the only process with an `audio.primary.mt6768.so` mapped
+(the `lib/hw` 32-bit copy). `/system/bin/audioserver` is a 64-bit ELF with **no**
+audio.primary mapped — it binders into pid 1040. The 64-bit HAL copy is never loaded.
+
+Instruction-verified cross-reference scan of the 32-bit ELF (capstone; every ARM/Thumb
+reference form checked: PIC literal-pool `ldr+add`, `movw/movt`, raw VA words across
+`.text/.data.rel.ro/.data/.got`): `Set_SpeechCall_UL_Mute`, `Set_SpeechCall_DL_Mute` and
+`Set_BGS_UL_Mute` have **zero code references** in the only binary that contains them.
+`PhoneCallController::setParam/setUlMute/setMicMute/setDlMute` likewise have no direct
+callers — reachable only through internal vtable dispatch (controller vtable live-mapped:
+setMicMute slot `+0x48`, setDlMute `+0x54`, setUlMute `+0x60`, setParam `+0x74`).
+The 64-bit copy *does* reference at least `Set_SpeechCall_UL_Mute` (ADRP+ADD at
+`0x17269c`) — but that copy is inert on this phone, and earlier 64-bit "audiofilter
+consumer" readings were toolchain regex noise, not call semantics.
+
+Consequence: no app-reachable `AudioSystem.setParameters` key can mute or replace call
+uplink on this device. The residual suppression bug (remote hears dry mic + delayed FX
+copy) must be fixed where the app can act. Candidate now under evaluation: the same
+ALSA mixer control the driver itself programs (`Speech_UL_Mute`) via a root helper —
+pending explicit owner approval for a single live-call experiment (read `map`/`get`
+first, one write `1`, verify with remote listener, restore `0`). Static tool:
+`tools/alsa_ctl/alsa_ctl.c` (cross-compile with `aarch64-linux-gnu-gcc -static -O2`).
+Root cause chain documented: FX reaches remote via an `AudioTrack` pinned to
+`AudioDeviceInfo.TYPE_TELEPHONY` (BCP route); the dry mic uplink is generated inside the
+vendor HAL's own telephony capture and framework `MODE_CALL_REDIRECT` does not remove it
+on this vendor build (owner's remote test: original voice still audible).
+
 ## 8. Build, test and release procedure
 
 Toolchain configured: JDK 17; SDK platform 36; build-tools 36.0.0; Gradle 9.7.1;
