@@ -1,9 +1,11 @@
 # FOSS Phone — experimental live voice demo
 
-**This is a device-test demo, not a verified voice-replacement release.** The user
-confirmed that BCP plays a selected audio file to the other caller on the Narzo 50A /
-Axion Android 16. Live capture, processed injection, original-microphone suppression
-and two-way audio in this implementation still need testing together.
+**Device test failed: this build does not suppress the original microphone on the
+reported Narzo 50A / Axion 2.7 setup.** The user hears the processed voice at the other
+phone alongside their original voice, with an estimated 0.4–0.7 second delay. Original
+speech is also clearly audible during the 5-second Silence check. Do not use this
+build as voice replacement; routing diagnosis is required before further effect trials.
+Build success below does not establish working voice replacement.
 
 ## Build verification
 

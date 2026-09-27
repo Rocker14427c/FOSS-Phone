@@ -1,6 +1,6 @@
 # Experimental live call voice changer — implementation stage
 
-**Status (2026-09-26): built, tested and published as v1.14.0-alpha1-voice-demo; device replacement remains unverified.**
+**Status (2026-09-27): v1.14.0-alpha1-voice-demo passed build checks, but the user reports FAILED original-microphone suppression on Narzo 50A / Axion 2.7.**
 The working v1.13.0-rc1 recording release is unchanged. No phone installation, SSH,
 root command or audio-routing experiment was performed on the user's device.
 
@@ -54,6 +54,27 @@ recording and **BCP file playback heard on the other phone** work on this device
 BCP's remote playback is now device-confirmed by the user, not merely inferred from
 port discovery. It does **not** prove simultaneous live microphone capture, exclusive
 replacement of the original microphone path, or our complete two-way bridge.
+
+### Device test result: replacement failed
+
+The user reports that Girl-like audio reaches the remote caller **alongside** their
+original voice, with an estimated 0.4–0.7 second delay for the processed copy. The
+subsequent **5-second Silence check also left the original voice clearly audible**.
+These are user-observed results, not instrumented latency measurements.
+
+This establishes a failed suppression gate for the current demo/device combination;
+it is no longer merely an untested gate. It does not yet establish which framework,
+policy or vendor/HAL component retains the direct microphone path. Incoming-audio
+continuity and recovery still need separate confirmation. Do not treat this build as
+voice replacement or repeat preset tests as a remedy.
+
+The user has now supplied both routing snapshots. CALL_REDIRECT is active, and
+Android's managed mic→TX patch disappears during the trial. The active injected
+track has about 104 ms queued in that snapshot. See the
+[findings and limits](voice-routing-findings.md) and next
+[read-only vendor inspection](voice-routing-diagnostics.md). No mixer gain, microphone
+mute, property, SELinux or vendor-routing changes are authorized by that capture.
+AOSP/Lineage reference routing is not evidence of this phone's vendor implementation.
 
 ## Implemented path
 

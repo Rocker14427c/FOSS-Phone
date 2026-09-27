@@ -12,8 +12,9 @@ what was retained/replaced.
 information. [The build run](https://github.com/Rocker14427c/FOSS-Phone/actions/runs/36237438282)
 passed unit/packaging tests, both flavor builds, APK signature verification and the check that
 the module contains the identical APK. It is a **debug-signed test release**, package
-`org.fossify.phone.debug`, not an update to the previous release package. Real-device call
-capture and battery behavior remain unverified.
+`org.fossify.phone.debug`, not an update to the previous release package. The user subsequently confirmed recording works on their Narzo 50A / Axion 2.7
+Android 16. This is user-reported device evidence; battery use and broader route
+compatibility were not measured. See [the current handoff](AGENT-HANDOFF.md).
 
 ## Required installation
 
@@ -31,8 +32,9 @@ approval, default-dialer status, a microphone grant or a plain `pm grant` comman
 replace the privileged installation. There is intentionally **no microphone fallback**: on
 modern Android it can produce a file containing neither participant's voice.
 
-The target use case includes a Realme Narzo 50A on Axion 2.7 / Android 16, but that device/ROM
-has **not been tested here**. Some ROMs/routes expose no mixed call audio or only one direction.
+The user reports the published recorder works on their Realme Narzo 50A / Axion 2.7
+Android 16. No assistant-operated phone test was performed. Some other ROMs/routes
+may expose no mixed call audio or only one direction.
 This implementation cannot fix missing vendor audio routing just by requesting permission.
 
 ## Build and install the same APK as a privileged module

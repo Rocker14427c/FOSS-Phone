@@ -50,6 +50,12 @@ consent laws: the optional local beep is not guaranteed to reach the other party
 The user reports recording works on the Realme Narzo 50A / Axion 2.7 Android 16.
 Broader route compatibility and battery use still require device testing.
 
+## Agent handoff
+
+See [the complete project handoff](docs/AGENT-HANDOFF.md) for verified recording/build
+results, the failed voice-suppression test, routing/HAL findings, branch history and
+the remaining work. Continue from `arena/01a0dcd1-foss-phone`, not `main`.
+
 ## Experimental live voice effects
 
 The demo ports **BCP**'s telephony AudioTrack output (BCP playback is now confirmed by
@@ -60,8 +66,10 @@ and module use separate identities to preserve the working recorder. No extra ef
 app is required; simultaneous recording/effects and other audio routes are not supported yet.
 
 The [v1.14.0-alpha1 voice demo](https://github.com/Rocker14427c/FOSS-Phone/releases/tag/v1.14.0-alpha1-voice-demo)
-passed CI and includes the real APK plus matching Magisk ZIP. Live voice replacement
-still needs remote-caller testing; successful BCP playback alone does not prove it.
+passed CI and includes the real APK plus matching Magisk ZIP. **Device test failed:**
+the user reports both original and processed voice, and original speech remains clearly
+audible during Silence check on Narzo 50A / Axion 2.7. This build is not working voice
+replacement on that setup; further preset testing is not a fix.
 See [reference revisions, architecture, tests and remaining hardware gates](docs/voice-changer.md).
 
 ➡️ Explore more Fossify apps: https://www.fossify.org<br>
