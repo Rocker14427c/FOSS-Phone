@@ -431,3 +431,25 @@ across turns; download the packet rather than relying on an old absolute path.
 > libraries. Finish the selective-source-mute mapping/readback/recovery investigation;
 > do not guess mixer writes or declare the existing demo fixed. Establish authorized
 > phone access before claiming it; get my approval before installing or changing routing.
+
+### 2026-09-28 addendum: mixer gates proven inert; in-process instrumentation path chosen
+
+Live verdict: hardware-verified ALSA writes of `Speech_UL_Mute=1` **and** `Speech_Mic_Mute=1`
+(held and read back for 35 s during a real call) never affected the remote audibility of the
+owner's dry voice. Mixer-level suppression of the telephony uplink is inert on this vendormt6768
+build — the effective switch must be the speech-driver's modem message dispatched by
+`SpeechDriverNormal::SetUplinkSourceMute(bool)` (msg `0x2f08`, distinct from `SetUplinkMute`
+`0x2f02`; controller state byte then re-synced through recovery paths). External user-space
+cannot reproduce that dispatch sanely; the viable design is to act INSIDE the 32-bit
+`android.hardware.audio.service` (pid-resident) and drive the vendor method
+`PhoneCallController::getInstance()->setUlMute(bool)` — i.e. precisely the code path the vendor
+compiled for `Set_SpeechCall_UL_Mute` but left unwired for parameters.
+
+frida 17's arm64 server refuses 32-bit processes outright (`NotSupportedError: android system
+does not support 32-bit processes`) and its android-arm binary aborts under SU/K SU on this
+device (`u:r:ksu:s0`, SELinux Enforcing); frida 16.7.19 arm64 deployed for the in-process call.
+Tooling staged on device: /data/data/com.termux/files/home/tools/{alsa_ctl,fs16,frida-server[-arm]}
+(nothing in system paths; restorable by deletion). Experiment next: attach during live call,
+call setUlMute(true) ~20 s with auto-restore setUlMute(false), remote audibility checked by
+owner on second phone. Then production shaping (Magisk/Zygisk-level hook vs helper daemon),
+decided by whether FX injection remains while source mute is active.
